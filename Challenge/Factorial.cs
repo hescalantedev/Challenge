@@ -1,7 +1,5 @@
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
@@ -11,25 +9,33 @@ namespace Challenge
     public static class Factorial
     {
         [FunctionName("Factorial")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static HttpResponseMessage Run(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "Factorial/{number}")]
+            HttpRequestMessage req, int number, TraceWriter log)
         {
-            log.Info("C# HTTP trigger function processed a request.");
+            //log.Info("C# HTTP trigger function processed a request.");
 
-            // parse query parameter
-            string name = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0)
-                .Value;
+            var result = 1;
 
-            if (name == null)
+            string serie = "1.";
+
+            for (int i = 1; i <= number; i++)
             {
-                // Get request body
-                dynamic data = await req.Content.ReadAsAsync<object>();
-                name = data?.name;
+                if(i != 1)
+                {
+                    if(i == number)
+                    {
+                        serie += i;
+                    }
+                    else
+                    {
+                        serie += i + ".";
+                    }
+                }
+                result = result * i;
             }
-
-            return name == null
-                ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass a name on the query string or in the request body")
-                : req.CreateResponse(HttpStatusCode.OK, "Hello " + name);
+            // Fetching the name from the path parameter in the request URL
+            return req.CreateResponse(HttpStatusCode.OK, "!" + number + " = " + serie + " = " + result);
         }
     }
 }

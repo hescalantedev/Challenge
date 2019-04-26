@@ -1,7 +1,7 @@
-using System.Linq;
+using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
+using System.Net.Http.Headers;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Host;
@@ -11,25 +11,37 @@ namespace Challenge
     public static class Article_Details
     {
         [FunctionName("Article_Details")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static HttpResponseMessage Run(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "Article_Details/{article_name}/{unit_price}/{quantity}/{perception}")]
+            HttpRequestMessage req, 
+            string article_name, double unit_price, int quantity, int perception, TraceWriter log)
         {
-            log.Info("C# HTTP trigger function processed a request.");
+            //log.Info("You have to separate the values with slash '/' and the order of parameters is => article_name/unit_price/quantity/perception");
+            //log.Info("The perception is tax recharge apart from the IVA");
 
-            // parse query parameter
-            string name = req.GetQueryNameValuePairs()
-                .FirstOrDefault(q => string.Compare(q.Key, "name", true) == 0)
-                .Value;
+            double final_perception = 21 + perception;
+            double subtotal = unit_price * quantity;
+            double perception_percent = final_perception / 100 + 1;
+            double total = subtotal * perception_percent;
 
-            if (name == null)
-            {
-                // Get request body
-                dynamic data = await req.Content.ReadAsAsync<object>();
-                name = data?.name;
-            }
+            var details = "Article: " + article_name + "\n\n" +
+                          "Unit Price: " + unit_price + "\n\n" +
+                          "Quantity: " + quantity + "\n\n" +
+                          "Perception + IVA: " + perception + "% + 21% => " + final_perception + "\n\n" +
+                          "------------------------------------------------" + "\n\n" +
+                          "Subtotal  $" + subtotal + "\n\n" +
+                          "Total $" + total;
 
-            return name == null
-                ? req.CreateResponse(HttpStatusCode.BadRequest, "Please pass a name on the query string or in the request body")
-                : req.CreateResponse(HttpStatusCode.OK, "Hello " + name);
+            //var stream = new FileStream(@"http://localhost:7071\index.html", FileMode.Open);
+
+            //var response = new HttpResponseMessage(HttpStatusCode.OK);
+            //response.Content = new StreamContent(stream);
+            //response.Content.Headers.ContentType = new MediaTypeHeaderValue("text/html");
+            //return response;
+
+
+            // Fetching the name from the path parameter in the request URL
+            return req.CreateResponse(HttpStatusCode.OK, details);
         }
     }
 }
